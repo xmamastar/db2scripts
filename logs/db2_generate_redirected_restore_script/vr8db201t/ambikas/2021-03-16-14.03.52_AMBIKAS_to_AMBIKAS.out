@@ -1,0 +1,37 @@
+DB20000I  The UPDATE COMMAND OPTIONS command completed successfully.
+
+SET CLIENT ATTACH_MEMBER  0
+DB20000I  The SET CLIENT command completed successfully.
+
+SET CLIENT CONNECT_MEMBER 0
+DB20000I  The SET CLIENT command completed successfully.
+
+! mkdir -p /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS > /dev/null 2>&1 
+
+! rm -fR /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS/* > /dev/null 2>&1 
+
+RESTORE DATABASE AMBIKAS FROM '/db2scripts/backup/backup_vr8db201a/ambikas' TAKEN AT 20210316081356 DBPATH ON '/var/opt/db2/data' INTO AMBIKAS LOGTARGET /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS REPLACE EXISTING REDIRECT
+SQL1052N  The database path "/var/opt/db2/data" does not exist.
+
+DB20000I  The UPDATE COMMAND OPTIONS command completed successfully.
+
+SET CLIENT ATTACH_MEMBER  0
+DB20000I  The SET CLIENT command completed successfully.
+
+SET CLIENT CONNECT_MEMBER 0
+DB20000I  The SET CLIENT command completed successfully.
+
+! mkdir -p /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS > /dev/null 2>&1 
+
+! rm -fR /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS/* > /dev/null 2>&1 
+
+RESTORE DATABASE AMBIKAS FROM '/db2scripts/backup/backup_vr8db201a/ambikas' TAKEN AT 20210316081356 DBPATH ON '/db2data' INTO AMBIKAS LOGTARGET /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8db201t/ambikas/2021-03-16-14.03.52_AMBIKAS_to_AMBIKAS_LOGS REPLACE EXISTING REDIRECT
+SQL1277W  A redirected restore operation is being performed. During a table 
+space restore, only table spaces being restored can have their paths 
+reconfigured. During a database restore, storage group storage paths and DMS 
+table space containers can be reconfigured.
+DB20000I  The RESTORE DATABASE command completed successfully.
+
+RESTORE DATABASE AMBIKAS CONTINUE
+DB20000I  The RESTORE DATABASE command completed successfully.
+

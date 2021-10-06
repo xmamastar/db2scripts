@@ -1,0 +1,32 @@
+--  Status report for the server vr8sap01a  --
+----- config used : /db2scripts/housekeeping/db2_server_validation.cfg -----
+
+[NOK] - Search for suspicious (local) users: cmolaro, ecoppens, mdehoux
+[OK ] - Software , is installed, version 2.30-79.el8
+[OK ] - Software , is installed, version 1.3.1-11.el8
+[OK ] - Software , is installed, version 1.3.1-11.el8
+[OK ] - Software , is installed, version 8.3.1-5.1.el8
+[OK ] - Software , is installed, version 6.1-7.20180224.el8
+[OK ] - Software , is installed, version 16m-1.el8
+[NOK] - Group db2admx does exist (Group ID: '')
+[NOK] - /etc/systemd/system.conf has correct setting: DefaultTasksMax=infinity
+[NOK] - /proc/sys/vm/swappiness has correct setting: 5
+[OK ] - SELinux mode is set correctly: permissive
+[OK ] - /db2dump: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2dump: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2data: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2data: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2activelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2activelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2exports: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2exports: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - Number of instances in config (1) versus from what is found (1)
+[NOK] - Public key of root is known to instance db2acc
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V10.5
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V11.5

@@ -1,0 +1,29 @@
+-- BackupType: OFFLINE
+-- AS support: YES
+UPDATE COMMAND OPTIONS USING S ON Z ON /db2exports/db2scripts/logs/db2_generate_redirected_restore_script/vr8sap01a/db2acc/2021-03-02-10.26.40_SAMPLE_to_SAMPLE.out V ON;
+SET CLIENT ATTACH_MEMBER  0;
+SET CLIENT CONNECT_MEMBER 0;
+RESTORE DATABASE SAMPLE
+-- USER  <username>
+-- USING '<password>'
+FROM '/db2exports/backup_vr8sap01a/db2acc'
+TAKEN AT 20210302094531
+ON '/var/opt/db2/data'
+DBPATH ON '/var/opt/db2/data'
+INTO SAMPLE
+-- NEWLOGPATH /db2data/db2acc
+-- WITH <num-buff> BUFFERS
+-- BUFFER <buffer-size>
+-- REPLACE HISTORY FILE
+REPLACE EXISTING
+REDIRECT
+-- PARALLELISM <n>
+-- COMPRLIB '<lib-name>'
+-- COMPROPTS '<options-string>'
+WITHOUT ROLLING FORWARD
+-- WITHOUT PROMPTING
+;
+SET STOGROUP PATHS FOR IBMSTOGROUP
+ON '/db2data'
+;
+RESTORE DATABASE SAMPLE CONTINUE;

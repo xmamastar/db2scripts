@@ -1,0 +1,4 @@
+--  Status report for the server vr8db201a  --
+----- config used : /db2scripts/housekeeping/db2_server_validation.cfg -----
+
+[NOK] - Search for suspicious (local) users: ambikfn, cmolaro, ecoppens, mdehoux, db2inst1, db2fenc1

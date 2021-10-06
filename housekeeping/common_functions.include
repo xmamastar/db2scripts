@@ -1,0 +1,464 @@
+typeset -l gIs2CommonLibraryLoaded="yes"
+typeset -l gVerbose="off"
+
+typeset    gMessage="Please fill in an indicating message by filling \${gMessage}"
+typeset -i gErrorNo=99
+typeset    gIndicator="\|"
+
+typeset    gValue=""
+typeset -i gRepetition=1
+
+typeset    gQuestion=""
+typeset    gConstraint=""
+typeset    gOptionList=""
+typeset    gDefault=""
+
+  # --------------
+  # - TTY Colors -
+  # --------------
+    #
+    # http://www.unix.com/unix-dummies-questions-answers/3612-changing-korn-shell-script-text-menu-colors.html
+    #
+typeset gTTY_NEUTRAL=$( tput sgr0 2>&1 )
+typeset gTTY_RED=$( echo "\033[31m" )
+typeset gTTY_GREEN=$( echo "\033[32m" )
+typeset gTTY_BROWN=$( echo "\033[33m" )
+typeset gTTY_BLUE=$( echo "\033[34m" )
+typeset gTTY_PURPLE=$( echo "\033[35m" )
+typeset gTTY_CYAN=$( echo "\033[36m" )
+typeset gTTY_WHITE=$( echo "\033[37m" )
+
+typeset gTTY_BGRED=$( echo "\033[41m" )
+typeset gTTY_NORMAL=$( echo "\033[m" )
+
+typeset gTTY_UNDERLINE=$( echo "\033[4m" )
+typeset gTTY_REVERSE=$( echo "\033[7m" )
+
+
+#
+# Variables not meant for the other world
+#
+
+  #
+  # printfRepeatChar
+  #   Purpose: repeat a single character 'n' times
+  #   Accepts:
+  #     - ${gValue}
+  #     - ${gRepetition}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function printfRepeatChar {
+
+    if [ $# -eq 2 ] ; then
+      gValue="${1}"
+      gRepetition=${2}
+    fi
+
+    typeset    lChar="${gValue:0:1}"
+    typeset -i lRepetition=${gRepetition}
+
+    [[ ${lRepetition} -eq 0 ]] && lRepetition=1
+
+    typeset lLocalString=$( printf "%-${lRepetition}s" "${lChar}" )
+    echo "${lLocalString// /${lChar}}"
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # showIndicator
+  #   Purpose: shows a message with a progression indicator and returns to the beginning of the line
+  #   Accepts:
+  #     - ${gMessage}
+  #     - ${gIndicator}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function showIndicator {
+
+    typeset lMessage="${gMessage:0:77}"
+    [[ "${lMessage}" != "${gMessage}" ]] && lMessage="${lMessage:0:74}..."
+
+    if [ "\\${gIndicator}" == "\\|" ] ; then
+      gIndicator="/"
+    elif [ "\\${gIndicator}" == "\\/" ] ; then
+      gIndicator="-"
+    elif [ "\\${gIndicator}" == "\\-" ] ; then
+      gIndicator="\\"
+    else
+      gIndicator="|"
+    fi
+
+    printf "%-1s %-78s\r" "${gIndicator}" "${lMessage}"
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # showMessage
+  #   Purpose: show a message 'as is' on the screen
+  #   Accepts:
+  #     - ${gMessage}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function showMessage {
+
+    printf "${gMessage}\n"
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # showInfo
+  #   Purpose: shows a message on screen preceeded by 'Info -'
+  #   Accepts:
+  #     - ${gMessage}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function showInfo {
+
+    gMessage=$( echo "${gMessage}" | sed 's/^Info - //g' )
+    gMessage="Info - ${gMessage}"
+    showMessage
+
+    set +x
+    return 0
+  }
+
+  #
+  # showWarning
+  #   Purpose: shows a message on screen preceeded by 'Warning -'
+  #   Accepts:
+  #     - ${gMessage}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function showWarning {
+
+    gMessage=$( echo "${gMessage}" | sed 's/^Warning - //g' )
+    lMessage="Warning - ${lMessage}"
+    showMessage
+
+    set +x
+    return 0
+  }
+
+  #
+  # showError
+  #   Purpose: shows a message on screen preceeded by 'Error -' and followed by the return code
+  #   Accepts:
+  #     - ${gMessage}
+  #     - ${gErrorNo}
+  #   Returns:
+  #     * Return code = 0
+  #
+  function showError {
+
+    gMessage=$( echo "${gMessage}" | sed 's/^Error - //g' )
+    gMessage=$( printf "\nError - ${gMessage}" )
+    [[ ${gErrorNo} -ne 0 ]] && gMessage=$( printf "${gMessage}\nReturn code=${gErrorNo}\n" )
+    showMessage
+
+    set +x
+    return 0
+  }
+
+  #
+  # isNumeric
+  #   Purpose: determines whether the input is numeric or not
+  #   Accepts:
+  #     - ${gValue}
+  #   Returns:
+  #     * Return code = 0  ->  ${gValue} is a digit
+  #     * Return code = 1  ->  ${gValue} is empty
+  #     * Return code = 2  ->  ${gValue} is something else
+  #
+  function isNumeric {
+
+    typeset -i lValue=0
+    [[ "${1}" != "" ]] && gValue=${1}
+    [[ "${gValue}" == "" ]] && set +x && return 1
+    lValue=$( echo "${gValue}" | egrep "^[0-9][0-9]*+$" )
+    [[ "${lValue}" == "${gValue}" ]] && set +x && return 0 
+    set +x
+    return 2
+
+  }
+
+  #
+  # readValue
+  #   Purpose: accepts input from the user
+  #   Accepts:
+  #     - ${gQuestion}
+  #     - ${gConstraint} - is an answer MANDATORY or not (empty)
+  #     - ${gOptionList} - comma separated list of possible answers;
+  #                          only one of these will be accepted
+  #     - ${gDefault}    - the default value to set when no value is given
+  #   Returns:
+  #     * ${gValue}      - holding the answer (empty when something went wrong)
+  #     * Return code = 0  ->  response is given
+  #
+  function readValue {
+
+    typeset    lQuestion="${gQuestion}"  # Make variables known only for the function
+    typeset -u lConstraint=$( echo ${gConstraint} | tr '[a-z]' '[A-Z]' )
+    typeset    lDefault=${gDefault}
+    typeset    lOptions="${gOptionList}"
+    typeset -i lOptionList=0
+    typeset    lReturnValue
+    typeset    lInputValue=""
+
+    [[ "${1}" != "" ]] && lQuestion=${1}
+    [[ "${2}" != "" ]] && lConstraint=$( echo ${2} | tr '[a-z]' '[A-Z]' )
+    [[ "${3}" != "" ]] && lDefault=${3}
+
+    gValue=""
+
+    [[ "${lConstraint}" != "MANDATORY" ]] && lConstraint=""
+
+    if [ "${lDefault}" != "" ] ; then
+      lDefault=$( echo ${lDefault} | sed "s/\//~/g" )
+      lOptionList=$( echo ${lDefault} | grep -i ',' | wc -l )
+      lOptions=${lDefault}
+
+      if [ ${lOptionList} -ne 0 ] ; then
+        if [ "${4}" != "" ] ; then              # lDefault value and an option-list available
+          lDefault=${4}
+        else
+          lDefault=
+        fi
+      fi
+      lOptionsDisplay="${lOptions}"
+      if [ "${lDefault}" != "" -a "${lDefault}" != "${lOptions}" ] ; then
+        lOptionsDisplay=$(   echo ",${lOptions}," \
+                           | sed "s/,${lDefault},/,<${lDefault}>,/g" \
+                           | sed "s/^,//g" | sed "s/,$//g" )
+      fi
+
+      if [ "${lOptionsDisplay}" != "" ] ; then
+        lDefaultLength=$(( $( echo ${lOptionsDisplay} | sed 's/\\//g' | wc -m ) - 1 + 2 ))
+        if [ $( echo "${lQuestion}" | grep -E [[:space:]]\{${lDefaultLength}}:[[:space:]] | grep -v '^$' | wc -l ) -gt 0 ] ; then
+          lQuestion=$(   echo "${lQuestion}" \
+                       | sed -e "s/ \{${lDefaultLength},${lDefaultLength}\}:/[${lOptionsDisplay}]:/g" )
+        elif [ $( echo "${lQuestion}" | grep -E [[:space:]]\{${lDefaultLength}}[?][[:space:]] | grep -v '^$' | wc -l ) -gt 0 ] ; then
+          lQuestion=$(   echo "${lQuestion}" \
+                       | sed -e "s/ \{${lDefaultLength},${lDefaultLength}\}[?]/[${lOptionsDisplay}]?/g" )
+        else
+          lQuestion=$(   echo "${lQuestion}" \
+                       | sed "s/[ ]*:[ ]*$/ [${lOptionsDisplay}]: /g" \
+                       | sed "s/[ ]*?[ ]*$/ [${lOptionsDisplay}]? /g" )
+        fi
+      fi
+    fi
+
+    lReturnValue=1
+    while [ ${lReturnValue} -eq 1 ]
+    do
+      lInputValue=""
+      if [ $( echo "${SHELL}" | grep 'bash' | wc -l ) -gt 0 ] ; then
+        read -p "${lQuestion}" lInputValue
+      else
+        read lInputValue?"${lQuestion}"
+      fi
+      if [ "${lConstraint}" == "MANDATORY" -a "${lInputValue}" == "" ] ; then
+        if [ "${lDefault}" != "" ] ; then
+          lInputValue=$( echo ${lDefault} | sed "s/~/\//g" )
+          lReturnValue=${lInputValue}
+          break 1
+        else
+          echo "A value has to be entered."
+        fi
+      else
+        llCount=0
+        if [ ${lOptionList} -ne 0 ] ; then
+          llCount=$( echo ",${lOptions}," | grep -i ",${lInputValue}," | wc -l )
+        else
+          if [ "${lInputValue}" != "" ] ; then
+            llCount=1
+          fi
+        fi
+        # lDefault value and an option-list available
+        if [ "${lInputValue}" == "" -a "${lDefault}" != "" -a ${lOptionList} -ge 0 ] ; then
+          lInputValue=$( echo "${lDefault}" | sed "s/~/\//g" )
+          llCount=1
+        fi
+        if [ ${llCount} -eq 0 -a "${lInputValue}" == "" -a "${lConstraint}" != "MANDATORY" ] ; then
+          llCount=1
+        fi
+        if [ ${llCount} -gt 0 ] ; then
+          lReturnValue=${lInputValue}
+          break 1
+        fi
+      fi
+    done
+    gValue=${lReturnValue}
+    set +x
+    return 0
+
+  }
+
+  function getIniSection {
+
+    typeset    lIni=${1}
+    typeset    lSection=${2}
+    typeset    lDebug=${3}
+    typeset -i lStart
+    typeset -i lEOF
+    typeset    lTmp
+    typeset    lIniLine
+
+    if [ "${lDebug}" == "TRUE" ] ; then
+      set -x
+    fi
+    if [ "${lIni}" != "" -a "${lSection}" != "" ] ; then
+      lStart=$(grep -n "\[${lSection}\]" ${lIni} | awk -F: '{print $1}')
+      lEOF=$(wc -l ${lIni} | awk '{print $1}')
+      lTmp=/tmp/getIniSection.$$
+      touch ${lTmp}
+
+      lStart=$(expr ${lStart} + 1)
+      lIniLine=$(sed -n ${lStart},${lStart}p ${lIni})
+
+      while [ "${lIniLine}" != "$(echo "${lIniLine}" | grep '^\[[0-9a-zA-Z\_\-]*\]$')" ] ; do
+        echo ${lIniLine} >> ${lTmp}
+        lStart=$(expr ${lStart} + 1)
+        lIniLine=$(sed -n ${lStart},${lStart}p ${lIni})
+      done
+      chmod +x ${lTmp}
+      . ${lTmp}
+
+      rm -f ${lTmp}
+    fi
+    set +x
+  }
+
+  function getIni {
+
+    typeset    lIni=${1}
+    typeset -i lStart
+    typeset -i lEOF
+    typeset -i llCount
+    typeset    llIniLine
+    if [ "${lIni}" != "" ] ; then
+      lStart=1
+      lEOF=$(wc -l ${lIni} | awk '{print $1}')
+      tmp=/tmp/getIni.$$
+      touch ${tmp}
+
+      while [ ${lStart} -le ${lEOF} ] ; do
+        lIniLine=$(sed -n ${lStart},${lStart}p ${lIni})
+        if [ "${lIniLine}" != "$(echo "${lIniLine}" | grep '^\[[0-9a-zA-Z\_\-]*\]$')" ] ; then
+          lCount=$(echo ${lIniLine} | grep "^.[0-9a-zA-Z\_\-]*='" | egrep "','|'$" | wc -l | tr -d ' ')
+          if [ ${lCount} -gt 0 ] ; then
+            lIniLine=$(echo ${lIniLine} | sed "s/='/=\"'/" | sed "s/'$/'\"/")
+          fi
+          echo ${lIniLine} >> ${tmp}
+        fi
+        lStart=$(expr ${lStart} + 1)
+      done
+      chmod +x ${tmp}
+      . ${tmp}
+      rm -f ${tmp}
+    fi
+
+  }
+
+  function setIniSection {
+    
+    typeset    lFile=${1}
+    typeset    lTmp=${1}.tmp
+    typeset    lSection=${2}
+    typeset    lKey=${3}
+    typeset    lValue=${4}
+    typeset    lEOF=$(wc -l ${lFile} | awk '{print $1}')
+    typeset -i lCurrentLine=1
+    typeset    lWritten="FALSE"
+
+    rm -f ${lTmp}
+    touch ${lTmp}
+    if [ $(cat ${lFile} | grep "^\[${lSection}\]$" | wc -l) -gt 0 ] ; then
+      while [ ${lCurrentLine} -le ${lEOF} ] ; do
+        local_line=$(sed -n ${lCurrentLine},${lCurrentLine}p ${lFile})
+        lWritten="FALSE"
+        if [ $(echo ${local_line} | grep "^\[${lSection}\]$" | wc -l) -gt 0 ] ; then
+          echo ${local_line} >> ${lTmp}
+          lCurrentLine=$(expr ${lCurrentLine} + 1)
+          local_line=$(sed -n ${lCurrentLine},${lCurrentLine}p ${lFile})
+          while [ ${lCurrentLine} -le ${lEOF} -a \
+                  $(echo ${local_line} | grep "^\[" | grep "\]$" | wc -l) -eq 0 -a \
+                  "${lWritten}" = "FALSE" ] ; do
+            if [ $(echo ${local_line} | grep "^${lKey}=" | wc -l) -gt 0 ] ; then
+              echo "${lKey}=${lValue}" >> ${lTmp}
+              lWritten="TRUE"
+            fi
+            if [ "${lWritten}" = "FALSE" ] ; then
+              echo ${local_line} >> ${lTmp}
+            fi
+            lCurrentLine=$(expr ${lCurrentLine} + 1)
+            local_line=$(sed -n ${lCurrentLine},${lCurrentLine}p ${lFile})
+          done
+          if [ "${lWritten}" = "FALSE" ] ; then
+            echo "${lKey}=${lValue}\n" >> ${lTmp}
+            lWritten="TRUE"
+            lEOF=$(expr ${lEOF} + 2)   # additional line in ini-file
+          fi
+          lWritten="FALSE"  # one read to far, so dump this line too
+        fi
+        if [ "${lWritten}" = "FALSE" ] ; then
+          echo ${local_line} >> ${lTmp}
+        fi
+        lCurrentLine=$(expr ${lCurrentLine} + 1)
+      done
+    else
+      cp ${lFile} ${lTmp}
+      echo "\n[${lSection}]" >> ${lTmp}
+      echo "${lKey}=${lValue}\n" >> ${lTmp}
+    fi
+    if [ -e ${lTmp} ] ; then
+      mv ${lTmp} ${lFile}
+    fi
+
+  }
+
+  function setIni {
+    
+    typeset    lFile=${1}
+    typeset    lTmp=${1}.tmp
+    typeset    lKey=${2}
+    typeset    lValue=${3}
+    typeset    lEOF=$(wc -l ${lFile} | awk '{print $1}')
+    typeset -i lCurrentLine=1
+    typeset    lWritten="FALSE"
+
+    if [ $(grep "^${lKey}=" ${lFile} | wc -l) -gt 0 ] ; then
+      touch ${lTmp}
+      while [ ${lCurrentLine} -le ${lEOF} ] ; do
+        local_line=$(sed -n ${lCurrentLine},${lCurrentLine}p ${lFile})
+        if [ $(echo ${local_line} | grep "^${lKey}=" | wc -l) -gt 0 ] ; then
+          echo "${lKey}=${lValue}" >> ${lTmp}
+          lWritten="TRUE"
+        else
+          echo ${local_line} >> ${lTmp}
+        fi
+        lCurrentLine=$(expr ${lCurrentLine} + 1)
+      done
+    fi
+    if [ "${lWritten}" = "FALSE" ] ; then
+      cp ${lFile} ${lTmp}
+      echo "${lKey}=${lValue}" >> ${lTmp}
+    fi
+    if [ -e ${lTmp} ] ; then
+      mv ${lTmp} ${lTmp}
+    fi
+
+  }
+

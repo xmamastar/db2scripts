@@ -1,0 +1,754 @@
+typeset -l gIsDb2CommonLibraryLoaded="yes"
+typeset -l gVerbose="off"
+
+typeset -l gInstance=""
+typeset -u gDatabase=""
+typeset    gDb2InstallationList=""
+typeset    gDb2VersionList=""
+typeset    gDb2Version=""
+typeset    gDb2Release=""
+typeset    gDb2BuildInfo=""
+typeset -l gDb2InstancesList=""
+typeset -u gDb2DatabaseList=""
+typeset -u gDb2ActiveDatabaseList=""
+typeset    gDb2ListApplications=""
+typeset -i gDb2InstanceRunning=0
+typeset -i gDb2DbConnectable=0
+typeset    gDb2DbComment=""
+typeset -u gDb2ConnectionStatus="UNKNOWN"
+typeset -u gDb2ActivationStatus="UNKNOWN"
+
+typeset    gDb2User=
+typeset    gDb2Passwd=
+
+#
+# Variables not meant for the other world
+#
+typeset    _gDb2GregList=""
+
+  #
+  # fetchAllDb2Installations
+  #   Purpose: generate a list with all found installations of Db2
+  #   Accepts: not applicable
+  #   Returns:
+  #     * Return code = 0  ->  ${gDb2InstallationList}
+  #     * Return code = 1  ->  No Db2 software found
+  #     * Return code = 2  ->  No Db2 software installed
+  #
+  function fetchAllDb2Installations {
+
+    gDb2InstallationList=""
+    _gDb2GregList=$(   find /opt -name 'db2greg' -print 2>&1 \
+                     | egrep -v 'Permission denied|^$' \
+                     | sort -u )
+    [[ "${_gDb2GregList}" == "" ]] && set +x && return 1
+    for lCmdToExec in ${_gDb2GregList}
+    do
+      if [ "${lCmdToExec}" != "" ] ; then
+        gDb2InstallationList="$( echo ${gDb2InstallationList} | grep -v '^$' ; \
+                                 ${lCmdToExec} -dump 2>/dev/null | grep '^V,' | cut -d ',' -f5
+                               )"
+      fi
+    done
+    [[ "${gDb2InstallationList}" == "" ]] && set +x && return 2
+    gDb2InstallationList="$( echo ${gDb2InstallationList} | tr ' ' '\n' | grep -v '^$' | sort -u )"
+    set +x
+    return 0
+
+  }
+
+  #
+  # fetchAllDb2Versions
+  #   Purpose: generate a list with all found versions of Db2
+  #   Accepts: not applicable
+  #     * Return code = 1  ->  No Db2 software found
+  #     * Return code = 2  ->  No Db2 software installed
+  #
+  function fetchAllDb2Versions {
+
+    gDb2VersionList=""
+    _gDb2GregList=$(   find /opt -name 'db2greg' -print 2>&1 \
+                     | egrep -v 'Permission denied|^$' \
+                     | sort -u
+                   )
+    [[ "${_gDb2GregList}" == "" ]] && set +x && return 1
+    for lCmdToExec in ${_gDb2GregList}
+    do
+      if [ "${lCmdToExec}" != "" ] ; then
+        gDb2VersionList="$( echo ${gDb2VersionList} | grep -v '^$' ; \
+                              ${lCmdToExec} -dump 2>/dev/null \
+                            | grep '^S,DB2,' \
+                            | awk -F ',' '{print $4"="$3}'
+                          )"
+      fi
+    done
+    [[ "${gDb2VersionList}" == "" ]] && set +x && return 2
+    gDb2VersionList="$( echo ${gDb2VersionList} | tr ' ' '\n' | grep -v '^$' | sort -u )"
+    set +x
+    return 0
+
+  }
+
+  #
+  # fetchAllDb2Instances
+  #   Purpose: generate a list with all Db2 Server installations
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDb2VersionList} (filled by function fetchAllDb2Versions)
+  #   Returns:
+  #     * Return code = 0  ->  ${gDb2InstancesList}
+  #     * Return code = 1  ->  No Db2 installations found
+  #     * Return code = 2  ->  Input parameter ${gDb2VersionList} is empty
+  #
+  function fetchAllDb2Instances {
+
+    gDb2InstancesList=""
+    typeset    lTempList  # Make the variable local
+    typeset    lCmdToExec=""
+    typeset    lCmdGetInstInfo=""
+    typeset    lTempInstance=""
+    typeset    lHandledInstances=""
+    typeset    lDb2Install
+    typeset    lResultGetInstInfo
+    typeset -i lReturnCode=0
+
+    [[ "${gDb2VersionList}" == "" ]] && fetchAllDb2Versions && lReturnCode=$?
+    [[ ${lReturnCode} -ne 0 || "${gDb2VersionList}" == "" ]] && set +x && return 2
+
+    for lCmdToExec in ${_gDb2GregList}
+    do
+      if [ "${lCmdToExec}" != "" ] ; then
+        #
+        # Make a list with instances found by this version of db2greg
+        #
+        lTempList="$( ${lCmdToExec} -dump 2>/dev/null | grep '^I,DB2,' | cut -d ',' -f4 | grep -v '^$' )"
+        if [ "${lTempList}" != "" ] ; then
+          for lTempInstance in ${lTempList}
+          do
+            #
+            # Did we treat the instance before?
+            #
+            if [ $( echo "${lHandledInstances}" | grep "^${lTempInstance}$" | wc -l ) -eq 0 ] ;then
+              lCmdGetInstInfo=$(   echo ${lCmdToExec} \
+                                 | sed 's:bin:instance:g; s:db2greg:db2ilist:g' )
+              lResultGetInstInfo=$( ${lCmdGetInstInfo} -g ${lTempInstance} 2>&1 )
+              lReturnCode=$?
+              if [ ${lReturnCode} -ne 0 ] ; then
+                lResultGetInstInfo=$( ${lCmdGetInstInfo} 2>&1 | grep "^${lTempInstance}$" )
+                lReturnCode=$?
+              fi
+              if [ ${lReturnCode} -eq 0 ] ; then
+                #
+                # Are we not dealing with a client instance? Then proceed ...
+                #
+                if [ $( echo "${lResultGetInstInfo}" | egrep -v ':client:|^#|^$' | wc -l ) -gt 0 ] ; then
+                  gDb2InstancesList=$(   printf "${gDb2InstancesList}\n${lTempInstance}\n" \
+                                       | grep -v '^$' \
+                                       | sort -u )
+                fi
+                lHandledInstances=$(   printf "${lHandledInstances}\n${lTempInstance}\n" \
+                                     | grep -v '^$' \
+                                     | sort -u )
+              fi
+            fi
+          done
+        fi
+      fi
+    done
+    [[ "${gDb2InstancesList}" == "" ]] && set +x && return 1
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # fetchAllDb2Databases
+  #   Purpose: generate a list with all local (!) Db2 database within an instance
+  #   Accepts: not applicable
+  #   Returns:
+  #     * Return code = 0  ->  ${gDb2DatabaseList}
+  #     * Return code = 1  ->  Not a Db2 instance
+  #     * Return code = 2  ->  No local databases found
+  #
+  function fetchAllDb2Databases {
+
+    gDb2DatabaseList=""
+    typeset lIsNotDb2Instance=$(   which db2 2>&1 \
+                                 | grep 'no db2 in' \
+                                 | grep -v '^$' )
+    [[ "${lIsNotDb2Instance}" != "" ]] && set +x && return 1
+    gDb2DatabaseList=$(   db2 list db directory 2>&1 \
+                        | grep 'Directory entry type[ ]*= Indirect' -B 5 \
+                        | grep 'Database alias' \
+                        | cut -d '=' -f 2 \
+                        | tr -d ' ' )
+    [[ "${gDb2DatabaseList}" == "" ]] && set +x && return 2
+    set +x
+    return 0
+
+  }
+
+  #
+  # fetchAllDb2ActiveDatabases
+  #   Purpose: generate a list with all active local (!) Db2 database within an instance
+  #   Accepts: not applicable
+  #   Returns:
+  #     * Return code = 0  ->  ${gDb2ActiveDatabaseList}
+  #     * Return code = 1  ->  Not a Db2 instance
+  #     * Return code = 2  ->  No active databases found
+  #
+  function fetchAllDb2ActiveDatabases {
+
+    gDb2ActiveDatabaseList=""
+    typeset lIsNotDb2Instance=$(   which db2 \
+                                 | grep 'no db2 in' \
+                                 | grep -v '^$' >/dev/null 2>&1 )
+    [[ "${lIsNotDb2Instance}" != "" ]] && set +x && return 1
+    gDb2ActiveDatabaseList=$(   db2 list active databases 2>&1 \
+                              | grep 'Database name' \
+                              | awk -F '=' '{print $2}' \
+                              | tr -d ' ' )
+    [[ "${gDb2ActiveDatabaseList}" == "" ]] && set +x && return 2
+    set +x
+    return 0
+
+  }
+
+  #
+  # fetchAllDb2Applications
+  #   Purpose: fetch the list with applications
+  #   Accepts:ctiveDatabaseListctiveDatabaseList
+  #     * Optional
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  a list of applications is to be returned
+  #     * Return code = 1  ->  list of applications is empty
+  #     * ${gDb2ListApplications} = list of applications
+  #
+  function fetchAllDb2Applications {
+
+    gDb2ListApplications=""
+
+    typeset -i lIsActive=0
+    [[ "${gDb2ActiveDatabaseList}" == "" ]] && fetchAllDb2ActiveDatabases
+    if [ "${gDatabase}" != "" -a "${gDb2ActiveDatabaseList}" != "" ] ; then
+      lIsActive=$(   echo "${gDb2ActiveDatabaseList}" \
+                   | grep "^${gDatabase}$" \
+                   | wc -l )
+    fi
+
+    #
+    # Database name given, but not active? No applications are running
+    #
+    [[ "${gDatabase}" != "" && ${lIsActive} -eq 0 ]] && set +x && return 1
+
+    if [ "${gDatabase}" != "" ] ; then
+      gDb2ListApplications=$( db2 list applications for db ${gDatabase} )
+    fi
+    [[ "${gDatabase}" == "" ]] && gDb2ListApplications=$( db2 list applications )
+
+    if [ "${gDb2ListApplications}" == "" -o  \
+         $( echo "${gDb2ListApplications}" | grep 'SQL[0-9][0-9]*W' | wc -l ) -gt 0 ] ; then
+      gDb2ListApplications=""
+      set +x
+      return 1
+    fi
+    set +x
+    return 0
+
+  }
+
+  #
+  # getCurrentDb2Version
+  #  Purpose: get the current version of Db2
+  #  Accepts: not applicable
+  #  Returns:
+  #    * Return code = 0  ->  ${gDb2Version} (e.g. 10.5),
+  #                           ${gDb2Release} (e.g. 10.5),
+  #                           ${gDb2BuildInfo} (e.g. sb21346789)
+  #    * Return code = 1  ->  Not able to find the current version of Db2
+  #
+  function getCurrentDb2Version {
+
+    gDb2Version=""
+    gDb2Release=""
+    gDb2BuildInfo=""
+    typeset lLocalTmp=$(   db2level \
+                         | grep "Informational tokens" \
+                         | tr -d ',' \
+                         | tr '"' '\n' \
+                         | grep -v '^[ ]*$' )
+    [[ $( echo "${lLocalTmp}" | wc -l ) -ne 4 ]] && set +x && return 1
+
+    gDb2Release=$( echo "${lLocalTmp}" | sed -n 2p | sed 's/^DB2 [ ]*v//g' )
+    gDb2Version=$( echo "${gDb2Release}" | cut -d'.' -f 1-2 )
+    gDb2BuildInfo=$( echo "${lLocalTmp}" | sed -n 3p )
+    set +x
+    return 0
+
+  }
+
+  #
+  # getCurrentDbActivationState
+  #   Purpose: return whether the database is activated explicit or implicit
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  the activation status could be retrieved
+  #     * Return code = 1  ->  ${gDatabase} has no value or cannot be connected to
+  #     * ${gDb2ActivationStatus} ->  EXPLICIT|IMPLICIT|<UNKNOWN>|INACTIVE
+  #
+  function getCurrentDbActivationState {
+
+    typeset -i lIsActive=0
+    typeset -i lConnectionCode=0
+    typeset -u lStateInfo=""
+
+    gDb2ActivationStatus="UNKNOWN"
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    [[ "${gDb2ActiveDatabaseList}" == "" ]] && fetchAllDb2ActiveDatabases
+    if [ "${gDatabase}" != "" -a "${gDb2ActiveDatabaseList}" != "" ] ; then
+      lIsActive=$(   echo "${gDb2ActiveDatabaseList}" \
+                   | grep "^${gDatabase}$" \
+                   | wc -l )
+    fi
+    if [ ${lIsActive} -eq 0 ] ; then
+      gDb2ActivationStatus="INACTIVE"
+      set +x
+      return 0
+    fi
+
+    isDb2DbConnected
+    lConnectionCode=$? # When different from ZERO, then disconnect in the end
+   
+    handleDb2DbConnect
+    lReturnCode=$?
+    [[ ${lReturnCode} -ne 0 ]] && set +x && return 1
+
+    lStateInfo=$( db2 -x "SELECT DB_ACTIVATION_STATE
+                            FROM TABLE(MON_GET_DATABASE(-2))" )
+    lStateInfo=$( echo "${lStateInfo}" | tr -d ' ' )
+    gDb2ActivationStatus="IMPLICIT"
+    [[ "${lStateInfo}" == "EXPLICIT" ]] && gDb2ActivationStatus="${lStateInfo}"
+    if [ $( echo "${lStateInfo}" | grep '^SQL[0-9][0-9]*' | wc -l ) -gt 0 ] ; then
+      gDb2ActivationStatus="UNKNOWN"
+    fi
+
+    [[ ${lConnectionCode} -ne 0 ]] && db2 CONNECT RESET 2>&1 > /dev/null
+
+    set +x
+    return 0
+  }
+
+  #
+  # getCurrentDbComment
+  #   Purpose: return the comment from the database directory
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  the comment could be retrieved
+  #     * Return code = 1  ->  no comment found, ${gDatabase} has no value or is not found
+  #     * ${gDb2DbComment}
+  #
+  function getCurrentDbComment {
+
+    gDb2DbComment=""
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    gDb2DbComment=$(   db2 list database directory \
+                     | grep -A5 "alias[ ]*= ${gDatabase}" \
+                     | grep 'Comment' \
+                     | sed 's/[ ]*Comment[ ]*= //g'
+                   )
+    [[ "${gDb2DbComment}" == "" ]] && set +x && return 1
+
+    set +x
+    return 0
+  }
+
+  #
+  # getCurrentTablespaceStateInfo
+  #   Purpose: return a list with the information on the state of the tablespaces
+  #            diverting from 'normal'
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  the tablespace state informations
+  #     * Return code = 1  ->  ${gDatabase} has no value or cannot be connected to
+  #     * on screen:
+  #         <tablespace state>: <information>
+  #
+  function getCurrentTablespaceStateInfo {
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    typeset lSnapshotInfo=$( db2 get snapshot for tablespaces on ${gDatabase} 2>&1 )
+    typeset lListOfTbspStates=$(
+                echo "${lSnapshotInfo}" \
+              | grep 'Tablespace State' \
+              | sort -u \
+              | grep -v "0x'00000000'" \
+              | awk -F\= '{print $2}' \
+              | sed "s/[ ]*//g; s/^0x//g; s/\'//g"
+            )
+    typeset lTbspState
+    typeset lInfo
+
+    for lTbspState in ${lListOfTbspStates} ;
+    do
+      lInfo=$( db2tbst ${lTbspState} | awk -F\= '{print $2}' | sed 's/^ [ ]*//g' )
+      echo "${lTbspState}: ${lInfo}"
+    done
+
+    set +x
+    return 0
+  }
+
+  #
+  # isDb2Instance
+  #   Purpose: check whether the current user is a Db2 instance
+  #   Accepts:
+  #     Not applicable
+  #   Returns:
+  #     * Return code = 0  ->  a Db2 instance
+  #     * Return code = 1  ->  not a Db2 instance
+  #
+  function isDb2Instance {
+
+    typeset -l lWhichDb2=$( which db2 2>&1 )
+    [[ $( echo "${lWhichDb2}" | grep ' no db2 ' | wc -l ) -ne 0 ]] && set +x && return 1
+    # in a near future it would be better to test whether a client/server instance is used
+    set +x
+    return 0
+
+  }
+
+  #
+  # isDb2InstanceUp
+  #   Purpose: check whether a Db2 instance is up
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gInstance} (filled by function fetchAllDb2Versions)
+  #   Returns:
+  #     * Return code = 0  ->  instance is running
+  #     * Return code = 1  ->  ${gInstance} has no value
+  #     * Return code = 2  ->  instance indicated by ${gInstance} is not running
+  #     * ${gDb2InstanceRunning} = return code
+  #
+  function isDb2InstanceUp {
+
+    gDb2InstanceRunning=0
+    typeset -i lInstanceRunning=0
+    [[ "${gInstance}" == "" ]] && gDb2InstanceRunning=1
+    lInstanceRunning=$(   ps -ef \
+                        | grep 'db2sysc' \
+                        | cut -d' ' -f 1 \
+                        | grep "^${gInstance}$" \
+                        | egrep -v 'root|^$' \
+                        | wc -l )
+    if [ ${gDb2InstanceRunning} -eq 0 -a \
+         ${lInstanceRunning} -lt 1 ] ; then
+      gDb2InstanceRunning=2
+    fi
+    set +x
+    return ${gDb2InstanceRunning}
+
+  }
+
+  #
+  # isDb2DbConnectable
+  #   Purpose: check a Db2 database is connectable
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  Db2 database is connectable
+  #     * Return code = 1  ->  ${gDatabase} has no value
+  #     * Return code = 2  ->  database indicated by ${gDatabase} is not connectable
+  #     * ${gDb2DbConnectable} = return code
+  #
+  function isDb2DbConnectable {
+
+    gDb2DbConnectable=0
+    typeset -i lDb2Unconnectable=0
+    [[ "${gDatabase}" == "" ]] && gDb2DbConnectable=1
+    lDb2Unconnectable=$(   db2 connect to ${gDatabase} 2>&1 \
+                         | grep '^SQL[0-9][0-9]' \
+                         | wc -l )
+    [[ ${gDb2DbConnectable} -eq 0 && ${lDb2Unconnectable} -gt 0 ]] && gDb2DbConnectable=2
+    set +x
+    return ${gDb2DbConnectable}
+
+  }
+
+  #
+  # isDb2DbConnected
+  #   Purpose: check whether the current session is already connected to
+  #              Db2 database
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  Db2 database is connected
+  #     * Return code = 1  ->  ${gDatabase} has no value
+  #     * Return code = 2  ->  Db2 database is not connected
+  #     * Return code = 3  ->  Connected to another Db2 database
+  #     * ${gDb2ConnectionStatus} ->  <DATABASE>=(NOT_)CONNECTED or UNKNOWN
+  #
+  function isDb2DbConnected {
+
+    gDb2ConnectionStatus="UNKNOWN"
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    gDb2ConnectionStatus="${gDatabase}=NOT_CONNECTED"
+
+    typeset    lDatabase
+    typeset    lDb2ConnectionState=""
+    lDb2ConnectionState=$( db2 connect ) 2>&1
+    typeset -i lDb2IsAlreadyConnected=$(   echo "${lDb2ConnectionState}" \
+                                         | grep '^SQL[0-9][0-9]*N' \
+                                         | wc -l )
+      # Not connected to any database
+    if [ ${lDb2IsAlreadyConnected} -ne 0 ] ; then
+      set +x
+      return 2
+    fi
+
+      # Connected, but to which database?
+    lDb2IsAlreadyConnected=$(   echo "${lDb2ConnectionState}" \
+                              | grep " = ${gDatabase}$" \
+                              | wc -l
+                            )
+
+      # Connected, but to another database
+    if [ ${lDb2IsAlreadyConnected} -eq 0 ] ; then
+      lDatabase=$(   echo "${lDb2ConnectionState}" \
+                   | grep " Local database alias [ ]*= " \
+                   | awk -F'=' '{print $2}' \
+                   | tr -d ' '
+                 )
+      if [ "${lDatabase}" != "${gDatabase}" ] ; then
+        gDb2ConnectionStatus="${lDatabase}=CONNECTED"
+        set +x
+        return 3
+      fi
+    fi
+
+      # Connected to the database we are looking for
+    gDb2ConnectionStatus="${gDatabase}=CONNECTED"
+    set +x
+    return 0
+  }
+
+  #
+  # isDb2DbLocal
+  #   Purpose: check whether a Db2 database is a local (RC=0) or remote (RC=2) database
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  Db2 database is local
+  #     * Return code = 1  ->  ${gDatabase} has no value
+  #     * Return code = 2  ->  Db2 database is remote
+  #     * Return code = 3  ->  Db2 database cannot be found
+  #
+  function isDb2DbLocal {
+
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    typeset -i lDbIsLocal=$(   db2 list db directory \
+                             | grep -B 3 'Local database directory' \
+                             | grep 'alias' \
+                             | grep " = ${gDatabase}$" \
+                             | wc -l )
+    [[ ${lDbIsLocal} -eq 1 ]] && set +x && return 0
+    typeset -i lDbIsRemote=$(   db2 list db directory \
+                              | grep -B 3 'Node name' \
+                              | grep 'alias' \
+                              | grep " = ${gDatabase}$" \
+                              | wc -l )
+    [[ ${lDbIsRemote} -eq 1 ]] && set +x && return 2
+
+    set +x
+    return 3
+
+  }
+
+  #
+  # hasDb2DbAutomaticStorage
+  #   Purpose: return whether the Db2 database is enabled for Automatic Storage
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  is ready for or already using Automatic Storage
+  #     * Return code = 1  ->  ${gDatabase} has no value or cannot be connected to
+  #     * Return code = 2  ->  Db2 database is not yet using Automatic Storage
+  #
+  function hasDb2DbAutomaticStorage {
+
+    typeset -i lCountStoPaths=0
+    typeset -i lIsActive=0
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+    [[ "${gDb2ActiveDatabaseList}" == "" ]] && fetchAllDb2ActiveDatabases
+
+    if [ "${gDatabase}" != "" -a "${gDb2ActiveDatabaseList}" != "" ] ; then
+      lIsActive=$(   echo "${gDb2ActiveDatabaseList}" \
+                   | grep "^${gDatabase}$" \
+                   | wc -l )
+    fi
+
+    if [ ${lIsActive} -eq 0 ] ; then
+      isDb2DbConnectable
+      [[ ${gDb2DbConnectable} -ne 0 ]] && set +x && return 1
+      lCountStoPaths=$( db2 connect to ${gDatabase} >/dev/null 2>&1 ; \
+                        db2 -x "select count(*)
+                                  from sysibmadm.dbpaths
+                                 where type = 'DB_STORAGE_PATH' " 2>&1 ; \
+                        db2 connect reset >/dev/null 2>&1 ; \
+                      )
+    else
+      lCountStoPaths=$(   db2pd -db ${gDatabase} -storagepaths \
+                        | awk '/Storage Group Configuration/,/^$/' \
+                        | grep '^0x' \
+                        | wc -l
+                      )
+    fi
+
+    set +x
+    [[ ${lCountStoPaths} -ne 0 ]] && return 0
+    return 1
+
+  }
+
+  #
+  # handleDb2DbConnect
+  #   Purpose: connect to a Db2 database
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #     * Optional
+  #       - ${gDb2User}
+  #       - ${gDb2Passwd}
+  #   Returns:
+  #     * Return code = 0  ->  Db2 database is connected
+  #     * Return code = 1  ->  ${gDatabase} has no value
+  #     * Return code = 2  ->  database indicated by ${gDatabase} is not connectable
+  #
+  function handleDb2DbConnect {
+
+    [[ "${gDatabase}" == "" ]] && set +x && return 1
+
+    typeset -i lReturnCode=0
+    typeset    lReturnedText=""
+
+    isDb2DbConnected
+    lReturnCode=$?
+
+      # Already connected to the ${gDatabase}
+    [[ ${lReturnCode} == 0 ]] && set +x && return 0
+      # Connected to a wrong database, disconnect first
+    [[ ${lReturnCode} == 3 ]] && db2 connect reset >/dev/null 2>&1
+
+      # Not connect (anymore) to any database, so do connect now
+    if [ "${gDb2User}" == "" -a "${gDb2Passwd}" == "" ] ; then
+      lReturnedText=$( db2 connect to ${gDatabase} ) >/dev/null 2>&1
+    elif [ "${gDb2User}" != "" -a "${gDb2Passwd}" == "" ] ; then
+      lReturnedText=$( db2 connect to ${gDatabase} user ${gDb2User} ) >/dev/null 2>&1
+    else
+      lReturnedText=$( db2 connect to ${gDatabase} user ${gDb2User} using ${gDb2Passwd} ) >/dev/null 2>&1
+    fi
+
+      # Better safe than sorry, what is the status now?
+    isDb2DbConnected
+    lReturnCode=$?
+
+      # Trying to connect has busted
+    [[ ${lReturnCode} -ne 0 ]] && set +x && return 2
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # handleDb2DbDisconnect
+  #   Purpose: disconnect from a Db2 database
+  #   Accepts: not applicable
+  #   Returns:
+  #     * Return code = 0  ->  Db2 database is disconnected
+  #
+  function handleDb2DbDisconnect {
+
+    typeset    lDb2ConnectionState=""
+    lDb2ConnectionState=$( db2 connect ) 2>&1
+    typeset -i lDb2IsAlreadyConnected=$(   echo "${lDb2ConnectionState}" \
+                                         | grep '^SQL[0-9][0-9]*N' \
+                                         | wc -l )
+      # Not connected to any database
+    [[ ${lDb2IsAlreadyConnected} -ne 0 ]] && set +x && return 0
+
+    db2 -x "CONNECT RESET" >/dev/null 2>&1
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # handleForceAllDb2Applications
+  #   Purpose: force all applications
+  #   Accepts:
+  #     * Optional
+  #       - ${gDatabase}
+  #   Returns:
+  #     * Return code = 0  ->  a list of applications is to be returned
+  #     * Return code = 1  ->  forced nothing
+  #     * ${gDb2ListApplications} = list of applications
+  #
+  function handleForceAllDb2Applications {
+
+    fetchAllDb2Applications
+    [[ $? -gt 0 || "${gDb2ListApplications}" == "" ]] && set +x && return 1
+
+    typeset lApplHandle=""
+    for lAppHandle in $( echo "${gDb2ListApplications}" | awk -F' ' '{print $3}' )
+    do
+      db2 -x " force application ( ${lAppHandle} ) " >/dev/null 2>&1
+    done
+
+    set +x
+    return 0
+
+  }
+
+  #
+  # setCurrentDbComment
+  #   Purpose: set the comment into the database directory
+  #   Accepts:
+  #     * Mandatory
+  #       - ${gDatabase}
+  #       - ${gDb2DbComment}
+  #   Returns:
+  #     * Return code = 0  ->  the comment is set
+  #     * Return code = 1  ->  ${gDatabase} or ${gDb2DbComment} has no value
+  #     * Return code = 1  ->  could not set the comment
+  #
+  function setCurrentDbComment {
+
+    typeset lReturnCode=0
+
+    [[ "${gDb2DbComment}" == "" || "${gDatabase}" == "" ]] && set +x && return 1
+
+    db2 "CHANGE DATABASE ${gDatabase} COMMENT WITH '${gDb2DbComment}'" 2>&1
+    lReturnCode=$?
+    [[ ${lReturnCode} -ne 0 ]] && set +x && return 2
+
+    set +x
+    return 0
+  }
+

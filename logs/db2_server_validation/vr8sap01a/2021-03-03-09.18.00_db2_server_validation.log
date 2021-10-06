@@ -1,0 +1,78 @@
+--  Status report for the server vr8sap01a  --
+----- config used : /db2scripts/housekeeping/db2_server_validation.cfg -----
+
+[NOK] - Search for suspicious (local) users: cmolaro, ecoppens, mdehoux
+[NOK] - Group db2admx does exist (Group ID: '')
+[NOK] - /etc/systemd/system.conf has correct setting: DefaultTasksMax=infinity
+[NOK] - /proc/sys/vm/swappiness has correct setting: 5
+[OK ] - SELinux mode is set correctly: permissive
+[OK ] - /db2dump: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2dump: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2data: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2data: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2activelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2activelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2exports: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2exports: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - Number of instances in config (1) versus from what is found (1)
+[NOK] - Public key of root is known to instance db2acc
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V10.5
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V11.5
+[OK ] - db2acc: DB2 installed
+[OK ] - db2acc: DB2 version DB2 v11.5.5.0 in use
+[OK ] - db2acc: Permanent DB2 license is installed (DB2 Advanced Enterprise Server Edition)
+[OK ] - db2acc: Instance owner/client is defined local in /etc/passwd
+[OK ] - db2acc: Instance owner/client has its group defined local in /etc/group
+[OK ] - db2acc: Fenced user 'dbfacc' is defined local in /etc/passwd
+[OK ] - db2acc: Fenced user 'dbfacc' has its group defined local in /etc/group
+[INF] - db2acc: Instance type = 'Enterprise Server Edition with local and remote clients'
+[OK ] - db2acc: Instance started
+[YES] - db2acc: Database(s) are activated
+[OK ] - db2acc: Instance memory is capped -> not in scope
+[NOK] - db2acc: Minimal set of DB2 registry variables: DB2_RESTORE_GRANT_ADMIN_AUTHORITIES, DB2_ATS_ENABLE, DB2AUTH
+[NOK] - db2acc: Listening port (5912) is a service name registered in /etc/services
+[NOK] - db2acc: Service name registered in /etc/services
+[NOK] - db2acc: Another service is registered in /etc/services on port 5912: fis
+[OK ] - db2acc: A DB2 process is listening on the port
+[OK ] - db2acc: Directory does exist: /home/db2acc
+[OK ] - db2acc: Directory /home/db2acc has owner db2acc versus found db2acc
+[OK ] - db2acc: Directory /home/db2acc has group owner db2acc versus found db2acc
+[OK ] - db2acc: Directory /home/db2acc has permission 755 versus found 755
+[OK ] - dbfacc: Directory does exist: /home/dbfacc
+[OK ] - dbfacc: Directory /home/dbfacc has owner dbfacc versus found dbfacc
+[OK ] - dbfacc: Directory /home/dbfacc has group owner dbfacc versus found dbfacc
+[OK ] - db2acc: Directory does exist: /home/db2acc/.ssh
+[OK ] - db2acc: Directory /home/db2acc/.ssh has owner db2acc versus found db2acc
+[OK ] - db2acc: Directory /home/db2acc/.ssh has group owner db2acc versus found db2acc
+[OK ] - db2acc: Directory /home/db2acc/.ssh has permission 700 versus found 700
+[OK ] - db2acc: File does exist: /home/db2acc/.ssh/authorized_keys
+[OK ] - db2acc: File /home/db2acc/.ssh/authorized_keys has permission 644 versus found 644
+[OK ] - db2acc: Directory is writeable: /db2data/db2acc
+[NOK] - db2acc: Directory does exist: /db2activelogs/db2acc
+[NOK] - db2acc: Directory does exist: /db2archivelogs/db2acc
+[NOK] - db2acc: Directory does exist: /db2backups/backup_vr8sap01a/db2acc
+[OK ] - db2acc: Directory is writeable: /db2scripts
+[NOK] - db2acc: Directory does exist: /db2scripts/householding
+[OK ] - db2acc: Directory is writeable: /db2scripts/ddl
+[OK ] - db2acc: Directory is writeable: /db2scripts/logs
+[NOK] - db2acc: Directory does exist: /db2dump/db2acc
+[NOK] - db2acc:ACC: Directory does exist: /db2data/db2acc/ACC
+[NOK] - db2acc:ACC: DB CFG parameter is set: BLOCKNONLOGGED=YES
+[NOK] - db2acc:ACC: DB CFG parameter is set: LOGINDEXBUILD=ON
+[NOK] - db2acc:ACC: DB CFG parameter is set: LOG_DDL_STMTS=YES
+[NOK] - db2acc:ACC: Directory does exist: /db2activelogs/db2acc/ACC
+[NOK] - db2acc:ACC: Directory does exist: /db2archivelogs/db2acc/ACC
+[NOK] - db2acc:ACC: Directory does exist: /db2data/db2acc/ACC
+[NOK] - db2acc:SAMPLE: Directory does exist: /db2data/db2acc/SAMPLE
+[NOK] - db2acc:SAMPLE: DB CFG parameter is set: BLOCKNONLOGGED=YES
+[NOK] - db2acc:SAMPLE: DB CFG parameter is set: LOGINDEXBUILD=ON
+[NOK] - db2acc:SAMPLE: DB CFG parameter is set: LOG_DDL_STMTS=YES
+[NOK] - db2acc:SAMPLE: Directory does exist: /db2activelogs/db2acc/SAMPLE
+[NOK] - db2acc:SAMPLE: Directory does exist: /db2archivelogs/db2acc/SAMPLE
+[NOK] - db2acc:SAMPLE: Directory does exist: /db2data/db2acc/SAMPLE

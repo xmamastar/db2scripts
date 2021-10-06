@@ -1,0 +1,115 @@
+--  Status report for the server vr8db201a  --
+----- config used : /db2scripts/housekeeping/db2_server_validation.cfg -----
+
+[NOK] - Search for suspicious (local) users: ambikfn, cmolaro, ecoppens, mdehoux, db2inst1, db2fenc1
+[OK ] - Software binutils.x86_64 is installed, version 2.30-79.el8
+[OK ] - Software pam.i686 is installed, version 1.3.1-11.el8
+[OK ] - Software pam.x86_64 is installed, version 1.3.1-11.el8
+[OK ] - Software libstdc++.i686 is installed, version 8.3.1-5.1.el8
+[OK ] - Software ncurses-compat-libs.x86_64 is installed, version 6.1-7.20180224.el8
+[OK ] - Software nmon.x86_64 is installed, version 16m-1.el8
+[OK ] - Swap is at least 1/4 (= 4150 MB) of 16600 MB RAM: 4290 MB
+[NOK] - Group db2admx does exist (Group ID: '')
+[NOK] - /etc/systemd/system.conf has correct setting: DefaultTasksMax=infinity
+[OK ] - Kernel parameter kernel.shmmni has a value >= 256: 4096
+[OK ] - Kernel parameter kernel.shmmax has a value >= 18446744073692774399: 18446744073692774399
+[OK ] - Kernel parameter kernel.shmall has a value >= 2: 18446744073692774399
+[OK ] - Kernel parameter kernel.semmsl has a value >= 250: 32000
+[OK ] - Kernel parameter kernel.semmns has a value >= 256000: 1024000000
+[OK ] - Kernel parameter kernel.semopm has a value >= 32: 500
+[OK ] - Kernel parameter kernel.semmni has a value >= 256: 32000
+[OK ] - Kernel parameter kernel.msgmni has a value >= 1024: 32000
+[OK ] - Kernel parameter kernel.msgmax has a value >= 65536: 65536
+[OK ] - Kernel parameter kernel.msgmnb has a value >= 65536: 65536
+[NOK] - /proc/sys/vm/swappiness has correct setting: 5
+[OK ] - SELinux mode is set correctly: permissive
+[OK ] - /db2dump: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2dump: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2data: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2data: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2activelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2activelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) in /etc/fstab
+[OK ] - /db2archivelogs: Dedicated local filesystem(s) seen by mount
+[OK ] - /db2exports: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2exports: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2scripts: Shared NFS filesystem(s) seen by mount (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) in /etc/fstab (counted: 1)
+[OK ] - /db2backups: Shared NFS filesystem(s) seen by mount (counted: 1)
+[NOK] - Number of instances in config () versus from what is found (2)
+[NOK] - Public key of root is known to instance ambikas
+[NOK] - Public key of root is known to instance db2inst1
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V10.5
+[OK ] - Software installed on /opt/ibm versus db2greg and/or configuration file: V11.5
+[OK ] - ambikas: DB2 installed
+[NOK] - ambikas: DB2 version DB2 v11.5.5.0 in use
+[OK ] - ambikas: Permanent DB2 license is installed (DB2 Enterprise Server Edition)
+[OK ] - ambikas: Instance owner/client is defined local in /etc/passwd
+[OK ] - ambikas: Instance owner/client has its group defined local in /etc/group
+[OK ] - ambikas: Fenced user 'ambikfn' is defined local in /etc/passwd
+[OK ] - ambikas: Fenced user 'ambikfn' has its group defined local in /etc/group
+[INF] - ambikas: Instance type = 'Enterprise Server Edition with local and remote clients'
+[OK ] - ambikas: Instance started
+[YES] - ambikas: Database(s) are activated
+[OK ] - ambikas: Instance memory is capped -> not in scope
+[NOK] - ambikas: Minimal set of DB2 registry variables: DB2_RESTORE_GRANT_ADMIN_AUTHORITIES, DB2_ATS_ENABLE, DB2AUTH
+[OK ] - ambikas: Listening port (db2c_ambikas) is a service name registered in /etc/services
+[OK ] - ambikas: Directory does exist: /home/ambikas
+[OK ] - ambikas: Directory /home/ambikas has owner ambikas versus found ambikas
+[NOK] - ambikas: Directory /home/ambikas has group owner ambikas versus found grdb2acc
+[OK ] - ambikas: Directory /home/ambikas has permission 755 versus found 755
+[OK ] - ambikfn: Directory does exist: /home/ambikfn
+[OK ] - ambikfn: Directory /home/ambikfn has owner ambikfn versus found ambikfn
+[NOK] - ambikfn: Directory /home/ambikfn has group owner ambikfn versus found grdb2acc
+[NOK] - ambikas: Directory does exist: /home/ambikas/.ssh
+[OK ] - ambikas: Directory is writeable: /db2data/ambikas
+[OK ] - ambikas: Directory is writeable: /db2activelogs/ambikas
+[OK ] - ambikas: Directory is writeable: /db2archivelogs/ambikas
+[NOK] - ambikas: Directory does exist: /db2backups/backup_vr8db201a/ambikas
+[OK ] - ambikas: Directory is writeable: /db2scripts
+[NOK] - ambikas: Directory does exist: /db2scripts/householding
+[OK ] - ambikas: Directory is writeable: /db2scripts/ddl
+[OK ] - ambikas: Directory is writeable: /db2scripts/logs
+[OK ] - ambikas: Directory is writeable: /db2dump/ambikas
+[OK ] - ambikas:AMBIKAS: Directory is writeable: /db2data/ambikas/AMBIKAS
+[OK ] - ambikas:AMBIKAS: DB CFG parameter is set: BLOCKNONLOGGED=YES
+[OK ] - ambikas:AMBIKAS: DB CFG parameter is set: LOGINDEXBUILD=ON
+[NOK] - ambikas:AMBIKAS: DB CFG parameter is set: LOG_DDL_STMTS=YES
+[OK ] - ambikas:AMBIKAS: Directory does exist: /db2activelogs/ambikas/AMBIKAS
+[OK ] - ambikas:AMBIKAS: Directory /db2activelogs/ambikas/AMBIKAS has owner ambikas versus found ambikas
+[OK ] - ambikas:AMBIKAS: Directory /db2activelogs/ambikas/AMBIKAS has group owner ambikas versus found ambikas
+[NOK] - ambikas:AMBIKAS: Directory /db2activelogs/ambikas/AMBIKAS has permission 0775 versus found 0755
+[OK ] - ambikas:AMBIKAS: Directory does exist: /db2archivelogs/ambikas/AMBIKAS
+[OK ] - ambikas:AMBIKAS: Directory /db2archivelogs/ambikas/AMBIKAS has owner ambikas versus found ambikas
+[OK ] - ambikas:AMBIKAS: Directory /db2archivelogs/ambikas/AMBIKAS has group owner ambikas versus found ambikas
+[NOK] - ambikas:AMBIKAS: Directory /db2archivelogs/ambikas/AMBIKAS has permission 0750 versus found 0755
+[OK ] - ambikas:AMBIKAS: Directory does exist: /db2data/ambikas/AMBIKAS
+[OK ] - ambikas:AMBIKAS: Directory /db2data/ambikas/AMBIKAS has owner ambikas versus found ambikas
+[OK ] - ambikas:AMBIKAS: Directory /db2data/ambikas/AMBIKAS has group owner ambikas versus found ambikas
+[NOK] - ambikas:AMBIKAS: Directory /db2data/ambikas/AMBIKAS has permission 0775 versus found 0755
+[OK ] - db2inst1: DB2 installed
+[NOK] - db2inst1: DB2 version DB2 v11.5.5.0 in use
+[OK ] - db2inst1: Permanent DB2 license is installed (DB2 Enterprise Server Edition)
+[OK ] - db2inst1: Instance owner/client is defined local in /etc/passwd
+[OK ] - db2inst1: Instance owner/client has its group defined local in /etc/group
+[NOK] - db2inst1: Fenced user '' is defined local in /etc/passwd
+[OK ] - db2inst1: Fenced user '' has its group defined local in /etc/group
+[INF] - db2inst1: Instance type = 'Enterprise Server Edition with local and remote clients'
+[NOK] - db2inst1: Instance started
+[NOK] - db2inst1: Minimal set of DB2 registry variables: DB2_RESTORE_GRANT_ADMIN_AUTHORITIES, DB2_ATS_ENABLE, DB2AUTH, DB2COMM
+[OK ] - db2inst1: Listening port () is a service name registered in /etc/services
+[OK ] - db2inst1: Directory does exist: /home/db2inst1
+[OK ] - db2inst1: Directory /home/db2inst1 has owner db2inst1 versus found db2inst1
+[OK ] - db2inst1: Directory /home/db2inst1 has group owner db2inst1 versus found db2inst1
+[OK ] - db2inst1: Directory /home/db2inst1 has permission 755 versus found 755
+[NOK] - db2inst1: Directory does exist: /home/db2inst1/.ssh
+[OK ] - db2inst1: Directory is writeable: /db2data/db2inst1
+[OK ] - db2inst1: Directory is writeable: /db2activelogs/db2inst1
+[OK ] - db2inst1: Directory is writeable: /db2archivelogs/db2inst1
+[NOK] - db2inst1: Directory does exist: /db2backups/backup_vr8db201a/db2inst1
+[OK ] - db2inst1: Directory is writeable: /db2scripts
+[NOK] - db2inst1: Directory does exist: /db2scripts/householding
+[NOK] - db2inst1: Directory is writeable: /db2scripts/ddl
+[NOK] - db2inst1: Directory is writeable: /db2scripts/logs
+[NOK] - db2inst1: Directory does exist: /db2dump/db2inst1

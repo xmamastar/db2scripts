@@ -1,0 +1,38 @@
+--------------------------------------------------------------------------------
+2021-03-02-09.45.17 db2_backup.sh --instance db2acc --database SAMPLE
+--------------------------------------------------------------------------------
+	
+	Database     : SAMPLE
+	Date/Time    : 2021-03-02-09.45.21
+	BackupType   : 
+	LogMethod    : CIRCULAR
+	Activation   : INACTIVE
+	Retention    : 1
+	Retention Db2: 0
+	Forcing      : NO (When NO, no retry is done!)
+	Ssh usable   : NO
+	#LOG#        : /db2exports/db2scripts/logs/db2_backup/vr8sap01a/db2acc/2021-03-02-09.45.17_SAMPLE.log
+	Utilities    : none running
+	---
+	DB20000I  The CHANGE DATABASE COMMENT command completed successfully.
+	SQL5130N  The value specified for the configuration parameter "num_db_backups" 
+	is not in the valid range of "1" to "32767".
+	Info - Altered backup methodology from '' to 'OFFLINE'
+	
+	Command sequence - run 1/1 at 2021-03-02-09.45.27:
+	
+	db2 -v TERMINATE >>#LOG# 2>&1 ;
+	db2 -v BACKUP DB SAMPLE
+	      TO /db2exports/backup_vr8sap01a/db2acc
+	      COMPRESS
+	      WITHOUT PROMPTING ;
+	---
+TERMINATE
+DB20000I  The TERMINATE command completed successfully.
+
+	BACKUP DB SAMPLE TO /db2exports/backup_vr8sap01a/db2acc COMPRESS WITHOUT PROMPTING
+
+	
+
+	Backup successful. The timestamp for this backup image is : 20210302094531
+

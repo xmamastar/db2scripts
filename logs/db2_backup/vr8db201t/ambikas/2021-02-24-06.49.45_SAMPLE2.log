@@ -1,0 +1,43 @@
+--------------------------------------------------------------------------------
+2021-02-24-06.49.45 db2_backup.sh --instance ambikas --database sample2
+--------------------------------------------------------------------------------
+	
+	Database     : SAMPLE2
+	Date/Time    : 2021-02-24-06.49.48
+	BackupType   : 
+	LogMethod    : CIRCULAR
+	Activation   : INACTIVE
+	Retention    : 1
+	Retention Db2: 3
+	Forcing      : NO (When NO, no retry is done!)
+	Ssh usable   : NO
+	#LOG#        : /db2exports/db2scripts/logs/db2_backup/vr8db201t/ambikas/2021-02-24-06.49.45_SAMPLE2.log
+	Utilities    : none running
+	---
+	DB20000I  The CHANGE DATABASE COMMENT command completed successfully.
+	DB20000I  The UPDATE DATABASE CONFIGURATION command completed successfully.
+	Info - Altered backup methodology from '' to 'OFFLINE'
+	
+	Command sequence - run 1/1 at 2021-02-24-06.49.52:
+	
+	db2 -v TERMINATE >>#LOG# 2>&1 ;
+	db2 -v BACKUP DB SAMPLE2
+	      TO /db2exports/backup_vr8db201t/ambikas
+	      COMPRESS
+	      WITHOUT PROMPTING ;
+	---
+TERMINATE
+DB20000I  The TERMINATE command completed successfully.
+
+	BACKUP DB SAMPLE2 TO /db2exports/backup_vr8db201t/ambikas COMPRESS WITHOUT PROMPTING
+
+	
+
+	Backup successful. The timestamp for this backup image is : 20210224064956
+
+	---
+	Applying retention period of 1 for database SAMPLE2
+
+	 Files to remove:
+	  - /db2exports/backup_vr8db201t/ambikas/SAMPLE2.0.ambikas.DBPART000.20210224064725.001
+
